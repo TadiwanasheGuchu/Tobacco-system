@@ -1,0 +1,389 @@
+// Tobacco floor buying system.
+//
+// Conventions:
+// - Money and mass use Decimal, never Float.
+// - Bale, settlement and audit records are never hard-deleted; corrections
+//   are new rows (e.g. a new BaleGrading or BaleOffer) that supersede old ones.
+// - Anything that must reach TIMB is written to TimbOutbox in the same
+//   transaction as the business change, then delivered by the worker.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SUPERVISOR
+  RECEPTION
+  CLASSIFIER
+  BUYER
+  CASHIER
+}
+
+enum FloorType {
+  AUCTION
+  CONTRACT
+}
+
+enum GrowerStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum BaleStatus {
+  RECEIVED // weighed and ticketed
+  GRADED // graded, waiting for a price
+  PRICED // price offered, waiting for the grower's decision
+  ACCEPTED // grower accepted the price, waiting for settlement
+  REJECTED // grower rejected the price ("cancelled" bale), can be re-offered
+  WITHDRAWN // grower took the bale off the floor
+  SETTLED // included in a settlement
+}
+
+enum WeighSource {
+  SCALE
+  MANUAL
+}
+
+enum GradingKind {
+  TIMB // TIMB classifier grade (official)
+  BUYER // buyer's own grade
+}
+
+enum OfferSource {
+  AUCTION_BID
+  CONTRACT_PRICE
+  SUPERVISOR_OVERRIDE
+}
+
+enum ChargeKind {
+  PERCENT_OF_GROSS
+  PER_BALE
+  PER_KG
+}
+
+enum SettlementStatus {
+  APPROVED
+  PAID
+  REVERSED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  MOBILE_MONEY
+  CASH
+}
+
+enum OutboxStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  fullName     String
+  passwordHash String
+  role         Role
+  active       Boolean   @default(true)
+  buyerId      String?
+  buyer        Buyer?    @relation(fields: [buyerId], references: [id])
+  floorId      String?
+  floor        Floor?    @relation(fields: [floorId], references: [id])
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Floor {
+  id     String    @id @default(cuid())
+  code   String    @unique
+  name   String
+  type   FloorType
+  active Boolean   @default(true)
+  users  User[]
+  bales  Bale[]
+}
+
+model Season {
+  id          String       @id @default(cuid())
+  year        Int          @unique
+  active      Boolean      @default(false)
+  openedAt    DateTime     @default(now())
+  contracts   Contract[]
+  bales       Bale[]
+  gradePrices GradePrice[]
+}
+
+/// Licensed merchant buying on auction floors, or the contractor on contract floors.
+model Buyer {
+  id                String       @id @default(cuid())
+  code              String       @unique
+  name              String
+  timbLicenseNumber String       @unique
+  active            Boolean      @default(true)
+  users             User[]
+  offers            BaleOffer[]
+  contracts         Contract[]
+  gradePrices       GradePrice[]
+}
+
+model Grower {
+  id                String       @id @default(cuid())
+  timbGrowerNumber  String       @unique
+  firstName         String
+  lastName          String
+  nationalId        String       @unique
+  phone             String?
+  province          String?
+  district          String?
+  bankName          String?
+  bankAccountNumber String?
+  mobileMoneyNumber String?
+  status            GrowerStatus @default(ACTIVE)
+  timbVerifiedAt    DateTime?
+  createdAt         DateTime     @default(now())
+  contracts         Contract[]
+  bales             Bale[]
+  settlements       Settlement[]
+}
+
+/// A growing contract: the contractor financed inputs that are recovered from sales.
+model Contract {
+  id             String                @id @default(cuid())
+  contractNumber String                @unique
+  growerId       String
+  grower         Grower                @relation(fields: [growerId], references: [id])
+  buyerId        String
+  buyer          Buyer                 @relation(fields: [buyerId], references: [id])
+  seasonId       String
+  season         Season                @relation(fields: [seasonId], references: [id])
+  inputLoanUsd   Decimal               @db.Decimal(14, 2)
+  createdAt      DateTime              @default(now())
+  bales          Bale[]
+  recoveries     SettlementDeduction[]
+
+  @@index([growerId])
+}
+
+model Grade {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  description String
+  active      Boolean       @default(true)
+  gradings    BaleGrading[]
+  prices      GradePrice[]
+}
+
+/// Contract floor price list per contractor, season and grade.
+model GradePrice {
+  id            String   @id @default(cuid())
+  gradeId       String
+  grade         Grade    @relation(fields: [gradeId], references: [id])
+  buyerId       String
+  buyer         Buyer    @relation(fields: [buyerId], references: [id])
+  seasonId      String
+  season        Season   @relation(fields: [seasonId], references: [id])
+  pricePerKgUsd Decimal  @db.Decimal(10, 4)
+  effectiveFrom DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([buyerId, seasonId, gradeId, effectiveFrom])
+}
+
+model Bale {
+  id              String           @id @default(cuid())
+  ticketNumber    String           @unique
+  growerId        String
+  grower          Grower           @relation(fields: [growerId], references: [id])
+  floorId         String
+  floor           Floor            @relation(fields: [floorId], references: [id])
+  seasonId        String
+  season          Season           @relation(fields: [seasonId], references: [id])
+  contractId      String?
+  contract        Contract?        @relation(fields: [contractId], references: [id])
+  massKg          Decimal          @db.Decimal(8, 2)
+  weighSource     WeighSource
+  lane            String?
+  status          BaleStatus       @default(RECEIVED)
+  receivedById    String
+  receivedAt      DateTime         @default(now())
+  currentOfferId  String?          @unique
+  currentOffer    BaleOffer?       @relation("CurrentOffer", fields: [currentOfferId], references: [id])
+  decisionAt      DateTime?
+  gradings        BaleGrading[]
+  offers          BaleOffer[]      @relation("BaleOffers")
+  settlementLines SettlementLine[]
+
+  @@index([growerId, status])
+  @@index([floorId, receivedAt])
+}
+
+model BaleGrading {
+  id         String      @id @default(cuid())
+  baleId     String
+  bale       Bale        @relation(fields: [baleId], references: [id])
+  gradeId    String
+  grade      Grade       @relation(fields: [gradeId], references: [id])
+  kind       GradingKind
+  gradedById String
+  createdAt  DateTime    @default(now())
+
+  @@index([baleId, kind, createdAt])
+}
+
+model BaleOffer {
+  id            String      @id @default(cuid())
+  baleId        String
+  bale          Bale        @relation("BaleOffers", fields: [baleId], references: [id])
+  buyerId       String
+  buyer         Buyer       @relation(fields: [buyerId], references: [id])
+  pricePerKgUsd Decimal     @db.Decimal(10, 4)
+  source        OfferSource
+  createdById   String
+  reason        String?
+  createdAt     DateTime    @default(now())
+  currentFor    Bale?       @relation("CurrentOffer")
+
+  @@index([baleId, createdAt])
+}
+
+/// Configurable levies, commissions and fees. Values change by season, so rules
+/// carry an effective window rather than being hard-coded.
+model ChargeRule {
+  id            String     @id @default(cuid())
+  code          String
+  name          String
+  kind          ChargeKind
+  /// Percent (e.g. 1.5 = 1.5%) or USD amount, depending on kind.
+  value         Decimal    @db.Decimal(10, 4)
+  floorType     FloorType?
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime   @default(now())
+}
+
+/// Share of the net payout paid in USD; the remainder is paid in ZiG.
+model PaymentSplitRule {
+  id            String   @id @default(cuid())
+  usdPercent    Decimal  @db.Decimal(5, 2)
+  effectiveFrom DateTime
+  createdAt     DateTime @default(now())
+}
+
+/// ZiG per 1 USD, as captured for the trading day.
+model ExchangeRate {
+  id            String   @id @default(cuid())
+  zigPerUsd     Decimal  @db.Decimal(14, 4)
+  effectiveFrom DateTime
+  capturedById  String
+  createdAt     DateTime @default(now())
+}
+
+model Settlement {
+  id               String                @id @default(cuid())
+  number           String                @unique
+  growerId         String
+  grower           Grower                @relation(fields: [growerId], references: [id])
+  floorId          String
+  grossUsd         Decimal               @db.Decimal(14, 2)
+  deductionsUsd    Decimal               @db.Decimal(14, 2)
+  netUsd           Decimal               @db.Decimal(14, 2)
+  usdPercent       Decimal               @db.Decimal(5, 2)
+  payUsd           Decimal               @db.Decimal(14, 2)
+  payZigUsdEquiv   Decimal               @db.Decimal(14, 2)
+  zigPerUsd        Decimal               @db.Decimal(14, 4)
+  payZig           Decimal               @db.Decimal(16, 2)
+  paymentMethod    PaymentMethod
+  paymentReference String?
+  status           SettlementStatus      @default(APPROVED)
+  createdById      String
+  createdAt        DateTime              @default(now())
+  paidById         String?
+  paidAt           DateTime?
+  reversedById     String?
+  reversedAt       DateTime?
+  reversalReason   String?
+  lines            SettlementLine[]
+  deductions       SettlementDeduction[]
+
+  @@index([growerId])
+}
+
+model SettlementLine {
+  id            String     @id @default(cuid())
+  settlementId  String
+  settlement    Settlement @relation(fields: [settlementId], references: [id])
+  baleId        String
+  bale          Bale       @relation(fields: [baleId], references: [id])
+  gradeCode     String
+  massKg        Decimal    @db.Decimal(8, 2)
+  pricePerKgUsd Decimal    @db.Decimal(10, 4)
+  valueUsd      Decimal    @db.Decimal(14, 2)
+
+  @@index([baleId])
+}
+
+model SettlementDeduction {
+  id           String     @id @default(cuid())
+  settlementId String
+  settlement   Settlement @relation(fields: [settlementId], references: [id])
+  code         String
+  description  String
+  amountUsd    Decimal    @db.Decimal(14, 2)
+  contractId   String?
+  contract     Contract?  @relation(fields: [contractId], references: [id])
+}
+
+/// Append-only record of who did what.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  data       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+/// Transactional outbox for messages to TIMB.
+model TimbOutbox {
+  id            String       @id @default(cuid())
+  messageType   String
+  entityId      String
+  payload       Json
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  lastError     String?
+  timbReference String?
+  createdAt     DateTime     @default(now())
+  sentAt        DateTime?
+  nextAttemptAt DateTime     @default(now())
+
+  @@index([status, nextAttemptAt])
+}
+
+/// Named counters for human-readable numbers (bale tickets, settlements).
+model Sequence {
+  name  String @id
+  value Int    @default(0)
+}
