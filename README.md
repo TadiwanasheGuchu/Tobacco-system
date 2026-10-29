@@ -110,6 +110,10 @@ The seed creates these accounts, all with the password `ChangeMe2026` (or `SEED_
 | `npm run db:seed` | Demo data |
 | `npm run worker` | TIMB outbox worker |
 
+## Changing the look
+
+Every colour comes from the tokens at the top of `src/app/globals.css`: a light set and a dark set, with the dark set used automatically when the device is in dark mode. Change those values to re-brand the whole app. The font is DM Sans, bundled with the app so it works offline, and the icons come from `lucide-react`. The sidebar is in `src/app/(app)/layout.tsx` and the shared form controls are in `src/components/`.
+
 ## Project layout
 
 ```

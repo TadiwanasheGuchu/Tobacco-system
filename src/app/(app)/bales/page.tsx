@@ -43,20 +43,20 @@ export default async function BalesPage({ searchParams }: PageProps<"/bales">) {
       </ActionForm>
 
       <div className="flex flex-wrap gap-2 text-sm">
-        <Link href={link({ status: undefined })} className={`btn ${!status ? "btn-primary" : ""}`}>
+        <Link href={link({ status: undefined })} className="btn btn-chip" aria-current={!status}>
           All
         </Link>
         {STATUSES.map((s) => (
-          <Link key={s} href={link({ status: s })} className={`btn ${status === s ? "btn-primary" : ""}`}>
+          <Link key={s} href={link({ status: s })} className="btn btn-chip" aria-current={status === s}>
             {s.charAt(0) + s.slice(1).toLowerCase()}
           </Link>
         ))}
-        <span className="mx-2 border-l border-border" />
-        <Link href={link({ floor: undefined })} className={`btn ${!floorId ? "btn-primary" : ""}`}>
+        <span className="mx-1 self-stretch border-l border-border" />
+        <Link href={link({ floor: undefined })} className="btn btn-chip" aria-current={!floorId}>
           All floors
         </Link>
         {floors.map((f) => (
-          <Link key={f.id} href={link({ floor: f.id })} className={`btn ${floorId === f.id ? "btn-primary" : ""}`}>
+          <Link key={f.id} href={link({ floor: f.id })} className="btn btn-chip" aria-current={floorId === f.id}>
             {f.code}
           </Link>
         ))}

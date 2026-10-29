@@ -100,14 +100,14 @@ async function main() {
 
   const passwordHash = await hashPassword(PASSWORD);
   const users = [
-    { username: "admin", fullName: "System Admin", role: "ADMIN" as const },
-    { username: "supervisor", fullName: "Floor Supervisor", role: "SUPERVISOR" as const, floorId: auction.id },
-    { username: "reception", fullName: "Reception Clerk", role: "RECEPTION" as const, floorId: auction.id },
-    { username: "reception2", fullName: "Contract Floor Clerk", role: "RECEPTION" as const, floorId: contractFloor.id },
-    { username: "classifier", fullName: "TIMB Classifier", role: "CLASSIFIER" as const },
-    { username: "buyer1", fullName: "Leaf Traders Buyer", role: "BUYER" as const, buyerId: buyers[0].id },
-    { username: "buyer2", fullName: "Nyika Buyer", role: "BUYER" as const, buyerId: buyers[1].id },
-    { username: "cashier", fullName: "Floor Cashier", role: "CASHIER" as const },
+    { username: "admin", fullName: "Nyasha Admin", role: "ADMIN" as const },
+    { username: "supervisor", fullName: "Chipo Mutasa", role: "SUPERVISOR" as const, floorId: auction.id },
+    { username: "reception", fullName: "Tatenda Banda", role: "RECEPTION" as const, floorId: auction.id },
+    { username: "reception2", fullName: "Kudzai Phiri", role: "RECEPTION" as const, floorId: contractFloor.id },
+    { username: "classifier", fullName: "Blessing Sibanda", role: "CLASSIFIER" as const },
+    { username: "buyer1", fullName: "Tafadzwa Ncube", role: "BUYER" as const, buyerId: buyers[0].id },
+    { username: "buyer2", fullName: "Ruvimbo Dube", role: "BUYER" as const, buyerId: buyers[1].id },
+    { username: "cashier", fullName: "Memory Zhou", role: "CASHIER" as const },
   ];
   for (const u of users) {
     await db.user.upsert({ where: { username: u.username }, update: {}, create: { ...u, passwordHash } });

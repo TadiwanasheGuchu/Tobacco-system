@@ -54,7 +54,7 @@ export function ActionForm({
       }}
     >
       {children}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 pt-1">
         <button type="submit" className={buttonClassName} disabled={pending}>
           {pending ? pendingLabel : submitLabel}
         </button>

@@ -34,6 +34,7 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
     (await db.user.findMany({ where: { id: { in: history.map((h) => h.actorId!).filter(Boolean) } } })).map((u) => [u.id, u.fullName]),
   );
 
+  const buyerCodes = new Map(buyers.map((b) => [b.id, b.code]));
   const timbGrade = bale.gradings.find((g) => g.kind === "TIMB");
   const buyerGrade = bale.gradings.find((g) => g.kind === "BUYER");
   const gradable = ["RECEIVED", "GRADED", "PRICED"].includes(bale.status);
@@ -228,12 +229,14 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
 
       <section className="card">
         <h2 className="mb-2 font-semibold">History</h2>
-        <ol className="space-y-1 text-sm">
+        <ol className="space-y-3 border-l-2 border-border pl-4 text-sm">
           {history.map((h) => (
-            <li key={h.id}>
-              <span className="text-muted">{h.createdAt.toLocaleString("en-ZW")}</span> · {h.action.replace("bale.", "")} ·{" "}
-              {h.actorId ? actorNames.get(h.actorId) : "system"}
-              {h.data ? <span className="text-muted"> · {JSON.stringify(h.data)}</span> : null}
+            <li key={h.id} className="relative">
+              <span className="absolute top-1.5 -left-[1.3rem] h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+              <span className="font-medium">{describeEvent(h.action, h.data as Record<string, string> | null, buyerCodes)}</span>
+              <span className="block text-xs text-muted">
+                {h.actorId ? actorNames.get(h.actorId) : "System"} · {h.createdAt.toLocaleString("en-ZW")}
+              </span>
             </li>
           ))}
         </ol>
@@ -249,4 +252,29 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
       <div className="font-medium">{children}</div>
     </div>
   );
+}
+
+/** Turns an audit entry into a sentence for the bale's history. */
+function describeEvent(action: string, data: Record<string, string> | null, buyerCodes: Map<string, string>): string {
+  const price = (v?: string) => (v ? `${formatUsd(v)}/kg` : "");
+  switch (action) {
+    case "bale.receive":
+      return `Received at ${formatNumber(data?.massKg ?? 0, 2)} kg${data?.weighSource === "MANUAL" ? " (weight typed in)" : " from the scale"}`;
+    case "bale.grade":
+      return `${data?.kind === "TIMB" ? "TIMB grade" : "Buyer grade"} ${data?.grade ?? ""}`;
+    case "bale.bid":
+      return `${buyerCodes.get(data?.buyerId ?? "") ?? "Buyer"} bid ${price(data?.pricePerKgUsd)}`;
+    case "bale.priceOverride":
+      return `Price set to ${price(data?.pricePerKgUsd)}: ${data?.reason ?? ""}`;
+    case "bale.accept":
+      return "Grower accepted the price";
+    case "bale.reject":
+      return "Grower rejected the price";
+    case "bale.reoffer":
+      return "Put back on sale";
+    case "bale.withdraw":
+      return "Withdrawn from the floor";
+    default:
+      return action.replace("bale.", "");
+  }
 }
