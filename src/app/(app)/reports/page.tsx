@@ -1,3 +1,6 @@
+import { PageTitle } from "@/components/page-title";
+import { BarChart3, Download, Filter, Send } from "lucide-react";
+import { Empty } from "@/components/empty";
 import { ActionForm, Field } from "@/components/action-form";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -38,12 +41,11 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Reports</h1>
-          <p className="text-sm text-muted">
-            {floorName} · {range.fromLabel === range.toLabel ? range.fromLabel : `${range.fromLabel} to ${range.toLabel}`}
-          </p>
-        </div>
+        <PageTitle
+          icon={<BarChart3 size={22} />}
+          title="Reports"
+          subtitle={`${floorName} · ${range.fromLabel === range.toLabel ? range.fromLabel : `${range.fromLabel} to ${range.toLabel}`}`}
+        />
         <form className="ml-auto flex flex-wrap items-end gap-2 print:hidden">
           <label className="text-sm">
             <span className="mb-1 block font-medium">From</span>
@@ -64,7 +66,10 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
               ))}
             </select>
           </label>
-          <button className="btn btn-primary">Show</button>
+          <button className="btn btn-primary">
+            <Filter size={16} aria-hidden />
+            Show
+          </button>
         </form>
       </div>
 
@@ -148,9 +153,9 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
                 ))}
                 {payouts.byMethod.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="text-muted">
-                      No settlements.
-                    </td>
+                    <td colSpan={4}>
+                  <Empty>No settlements.</Empty>
+                </td>
                   </tr>
                 )}
               </tbody>
@@ -187,8 +192,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             ))}
             {loans.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-muted">
-                  No contracts this season.
+                <td colSpan={6}>
+                  <Empty>No contracts this season.</Empty>
                 </td>
               </tr>
             )}
@@ -203,7 +208,7 @@ export default async function ReportsPage({ searchParams }: PageProps<"/reports"
             Queues one summary per floor (bales, mass, value and a breakdown by TIMB grade) for the chosen day. Each floor
             and day can only be queued once. Track delivery under Admin → TIMB outbox.
           </p>
-          <ActionForm action={queueDailySummaryAction} submitLabel="Queue for TIMB" className="flex flex-wrap items-end gap-3">
+          <ActionForm action={queueDailySummaryAction} submitLabel="Queue for TIMB" icon={<Send size={16} />} className="flex flex-wrap items-end gap-3">
             <Field label="Trading day" name="date" type="date" defaultValue={range.toLabel} required />
           </ActionForm>
         </section>
@@ -217,6 +222,7 @@ function Heading({ title, csvHref, csvLabel = "Download CSV" }: { title: string;
     <div className="flex flex-wrap items-center gap-3">
       <h2 className="font-semibold">{title}</h2>
       <a href={csvHref} className="btn ml-auto text-sm print:hidden">
+        <Download size={16} aria-hidden />
         {csvLabel}
       </a>
     </div>
@@ -250,9 +256,9 @@ function SalesTable({ title, first, rows, csvHref }: { title: string; first: str
           ))}
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={5} className="text-muted">
-                No sales in this period.
-              </td>
+              <td colSpan={5}>
+                  <Empty>No sales in this period.</Empty>
+                </td>
             </tr>
           ) : (
             <tr className="font-semibold">

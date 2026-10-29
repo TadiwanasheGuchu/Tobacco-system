@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { CalendarPlus, Plus, Settings } from "lucide-react";
 import { ActionForm, Field, Select } from "@/components/action-form";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -13,7 +15,7 @@ export default async function AdminPage() {
   ]);
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Admin</h1>
+      <PageTitle icon={<Settings size={22} />} title="Admin" />
       <AdminNav />
 
       <section className="card space-y-3">
@@ -22,7 +24,7 @@ export default async function AdminPage() {
           Open: {seasons.find((s) => s.active)?.year ?? <span className="text-danger">none</span>} · Past:{" "}
           {seasons.filter((s) => !s.active).map((s) => s.year).join(", ") || "-"}
         </p>
-        <ActionForm action={openSeasonAction} submitLabel="Open season" className="flex flex-wrap items-end gap-3" confirm="Opening a season closes the current one. Continue?">
+        <ActionForm action={openSeasonAction} submitLabel="Open season" icon={<CalendarPlus size={16} />} className="flex flex-wrap items-end gap-3" confirm="Opening a season closes the current one. Continue?">
           <Field label="Year" name="year" inputMode="numeric" required />
         </ActionForm>
       </section>
@@ -47,7 +49,7 @@ export default async function AdminPage() {
             ))}
           </tbody>
         </table>
-        <ActionForm action={createFloorAction} submitLabel="Add floor" className="grid gap-3 sm:grid-cols-4" resetOnSuccess>
+        <ActionForm action={createFloorAction} submitLabel="Add floor" icon={<Plus size={16} />} className="grid gap-3 sm:grid-cols-4" resetOnSuccess>
           <Field label="Code" name="code" required />
           <Field label="Name" name="name" required />
           <Select label="Type" name="type" options={[{ value: "AUCTION", label: "Auction" }, { value: "CONTRACT", label: "Contract" }]} />
@@ -74,7 +76,7 @@ export default async function AdminPage() {
             ))}
           </tbody>
         </table>
-        <ActionForm action={createBuyerAction} submitLabel="Add buyer" className="grid gap-3 sm:grid-cols-4" resetOnSuccess>
+        <ActionForm action={createBuyerAction} submitLabel="Add buyer" icon={<Plus size={16} />} className="grid gap-3 sm:grid-cols-4" resetOnSuccess>
           <Field label="Code" name="code" required />
           <Field label="Name" name="name" required />
           <Field label="TIMB licence number" name="timbLicenseNumber" required />

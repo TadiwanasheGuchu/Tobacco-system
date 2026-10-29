@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { CircleStop, Percent, Save } from "lucide-react";
 import { ActionForm, Field, Select } from "@/components/action-form";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -16,7 +18,7 @@ export default async function ChargesPage() {
   ]);
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Charges & payment split</h1>
+      <PageTitle icon={<Percent size={22} />} title="Charges & payment split" />
       <AdminNav />
       <p className="text-sm text-muted">
         Levies, commissions and fees deducted from every settlement. Rates change by season and by statutory instrument, so
@@ -45,7 +47,7 @@ export default async function ChargesPage() {
                 <td>{c.floorType?.toLowerCase() ?? "all"}</td>
                 <td>{c.effectiveFrom.toLocaleDateString("en-ZW")}</td>
                 <td>
-                  <ActionForm action={endChargeAction.bind(null, c.id)} submitLabel="End" buttonClassName="btn btn-danger" className="" confirm="Stop applying this charge from now?">
+                  <ActionForm action={endChargeAction.bind(null, c.id)} submitLabel="End" icon={<CircleStop size={16} />} buttonClassName="btn btn-danger" className="" confirm="Stop applying this charge from now?">
                     {null}
                   </ActionForm>
                 </td>
@@ -56,7 +58,7 @@ export default async function ChargesPage() {
       </section>
       <section className="card">
         <h2 className="mb-2 font-semibold">Add or replace a charge</h2>
-        <ActionForm action={createChargeAction} submitLabel="Save charge" className="grid gap-3 sm:grid-cols-3" resetOnSuccess>
+        <ActionForm action={createChargeAction} submitLabel="Save charge" icon={<Save size={16} />} className="grid gap-3 sm:grid-cols-3" resetOnSuccess>
           <Field label="Code" name="code" required hint="Same code and floors replaces the current rule." />
           <Field label="Name on statement" name="name" required />
           <Select label="Type" name="kind" options={Object.entries(KIND_LABEL).map(([value, label]) => ({ value, label }))} />
@@ -75,7 +77,7 @@ export default async function ChargesPage() {
       <section className="card">
         <h2 className="mb-2 font-semibold">USD / ZiG payment split</h2>
         <p className="mb-2 text-sm">Current: {split ? `${formatNumber(split.usdPercent, 2)}% USD` : "not set"}</p>
-        <ActionForm action={setSplitAction} submitLabel="Save split" className="flex flex-wrap items-end gap-3" resetOnSuccess>
+        <ActionForm action={setSplitAction} submitLabel="Save split" icon={<Save size={16} />} className="flex flex-wrap items-end gap-3" resetOnSuccess>
           <Field label="Share paid in USD (%)" name="usdPercent" inputMode="decimal" required />
         </ActionForm>
       </section>

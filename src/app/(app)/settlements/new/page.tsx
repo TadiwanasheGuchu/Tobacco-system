@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { Wallet } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm, Select } from "@/components/action-form";
@@ -34,9 +36,7 @@ export default async function NewSettlementPage({ searchParams }: PageProps<"/se
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">
-        Settle {grower.firstName} {grower.lastName} <span className="text-muted">({grower.timbGrowerNumber})</span>
-      </h1>
+      <PageTitle icon={<Wallet size={22} />} title={`Settle ${grower.firstName} ${grower.lastName}`} subtitle={`TIMB ${grower.timbGrowerNumber}`} />
       {groups.length === 0 && (
         <p className="card text-sm text-muted">
           No accepted bales are waiting. <Link href={`/growers/${grower.id}`} className="underline">Back to grower</Link>
@@ -103,7 +103,7 @@ export default async function NewSettlementPage({ searchParams }: PageProps<"/se
             )}
             <ActionForm
               action={createSettlementAction.bind(null, grower.id, g.floor.id, g.contract?.id ?? null)}
-              submitLabel="Create settlement"
+              submitLabel="Create settlement" icon={<Wallet size={16} />}
               className="flex flex-wrap items-end gap-3"
               confirm="Create this settlement? The bales will be marked as settled."
             >

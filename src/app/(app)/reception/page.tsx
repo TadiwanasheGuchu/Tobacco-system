@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { Printer, Scale } from "lucide-react";
 import { ActionForm, Field, Select } from "@/components/action-form";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -10,12 +12,12 @@ export default async function ReceptionPage() {
 
   return (
     <div className="max-w-xl space-y-4">
-      <h1 className="text-2xl font-semibold">Receive bale</h1>
+      <PageTitle icon={<Scale size={22} />} title="Receive bale" />
       <p className="text-sm text-muted">
         Scan or type the grower number, weigh the bale and save. A barcoded ticket opens for printing. On contract floors
         the grower&apos;s contract for this season is attached automatically.
       </p>
-      <ActionForm action={receiveBaleAction} submitLabel="Save and print ticket" className="card space-y-3">
+      <ActionForm action={receiveBaleAction} submitLabel="Save and print ticket" icon={<Printer size={16} />} className="card space-y-3">
         <Select
           label="Floor"
           name="floorId"

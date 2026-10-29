@@ -1,3 +1,6 @@
+import { Empty } from "@/components/empty";
+import { PageTitle } from "@/components/page-title";
+import { UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -24,9 +27,10 @@ export default async function GrowersPage({ searchParams }: PageProps<"/growers"
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">Growers</h1>
+        <PageTitle icon={<Users size={22} />} title="Growers" />
         {can(user.role, "grower.register") && (
           <Link href="/growers/new" className="btn btn-primary ml-auto">
+            <UserPlus size={16} aria-hidden />
             Register grower
           </Link>
         )}
@@ -64,8 +68,8 @@ export default async function GrowersPage({ searchParams }: PageProps<"/growers"
             ))}
             {growers.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-muted">
-                  No growers found.
+                <td colSpan={5}>
+                  <Empty>No growers found.</Empty>
                 </td>
               </tr>
             )}

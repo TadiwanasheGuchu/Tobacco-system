@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 /**
@@ -23,6 +24,7 @@ export function FlashProvider({ children }: { children: ReactNode }) {
     <FlashContext value={show}>
       {message && (
         <div role="status" className="fixed inset-x-0 top-3 z-50 mx-auto w-fit max-w-[90vw] rounded-md bg-brand px-4 py-2 text-sm font-medium text-[var(--brand-text)] shadow-lg print:hidden">
+          <CheckCircle2 size={16} className="mr-2 inline -mt-0.5" aria-hidden />
           {message.text}
         </div>
       )}

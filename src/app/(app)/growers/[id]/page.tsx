@@ -1,3 +1,6 @@
+import { PageTitle } from "@/components/page-title";
+import { Ban, FilePlus2, ShieldCheck, UserCheck, UserRound, Wallet } from "lucide-react";
+import { Empty } from "@/components/empty";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm, Field, Select } from "@/components/action-form";
@@ -33,17 +36,14 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {grower.firstName} {grower.lastName}
-          </h1>
-          <p className="text-sm text-muted">
-            TIMB {grower.timbGrowerNumber} · ID {grower.nationalId} · {grower.district ?? "no district"} ·{" "}
-            {grower.status.toLowerCase()}
-          </p>
-        </div>
+        <PageTitle
+          icon={<UserRound size={22} />}
+          title={`${grower.firstName} ${grower.lastName}`}
+          subtitle={`TIMB ${grower.timbGrowerNumber} · ID ${grower.nationalId} · ${grower.district ?? "no district"} · ${grower.status.toLowerCase()}`}
+        />
         {accepted > 0 && can(user.role, "settlement.create") && (
           <Link href={`/settlements/new?growerId=${grower.id}`} className="btn btn-primary ml-auto">
+            <Wallet size={16} aria-hidden />
             Settle {accepted} accepted bale{accepted === 1 ? "" : "s"}
           </Link>
         )}
@@ -53,7 +53,7 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
         <div className="card border-danger">
           <p className="mb-2 text-sm text-danger">Not verified with TIMB. This grower cannot sell until verified.</p>
           {can(user.role, "grower.register") && (
-            <ActionForm action={reverifyGrowerAction.bind(null, grower.id)} submitLabel="Verify with TIMB now" pendingLabel="Checking…">
+            <ActionForm action={reverifyGrowerAction.bind(null, grower.id)} submitLabel="Verify with TIMB now" icon={<ShieldCheck size={16} />} pendingLabel="Checking…">
               {null}
             </ActionForm>
           )}
@@ -103,7 +103,7 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
         {buyers.length > 0 && (
           <details>
             <summary className="cursor-pointer text-sm font-medium">Add contract for this season</summary>
-            <ActionForm action={addContractAction.bind(null, grower.id)} submitLabel="Add contract" className="mt-3 grid gap-3 sm:grid-cols-4" resetOnSuccess>
+            <ActionForm action={addContractAction.bind(null, grower.id)} submitLabel="Add contract" icon={<FilePlus2 size={16} />} className="mt-3 grid gap-3 sm:grid-cols-4" resetOnSuccess>
               <Field label="Contract number" name="contractNumber" required />
               <Select label="Contractor" name="buyerId" options={buyers.map((b) => ({ value: b.id, label: b.name }))} />
               <Field label="Input loan (USD)" name="inputLoanUsd" inputMode="decimal" required />
@@ -144,8 +144,8 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
             ))}
             {grower.bales.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-muted">
-                  No bales yet.
+                <td colSpan={6}>
+                  <Empty>No bales yet.</Empty>
                 </td>
               </tr>
             )}
@@ -181,8 +181,8 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
             ))}
             {grower.settlements.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-muted">
-                  No settlements yet.
+                <td colSpan={4}>
+                  <Empty>No settlements yet.</Empty>
                 </td>
               </tr>
             )}
@@ -196,6 +196,7 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
           <ActionForm
             action={setGrowerStatusAction.bind(null, grower.id)}
             submitLabel={grower.status === "ACTIVE" ? "Suspend" : "Reactivate"}
+            icon={grower.status === "ACTIVE" ? <Ban size={16} /> : <UserCheck size={16} />}
             buttonClassName={grower.status === "ACTIVE" ? "btn btn-danger" : "btn"}
             className="flex flex-wrap items-end gap-3"
           >

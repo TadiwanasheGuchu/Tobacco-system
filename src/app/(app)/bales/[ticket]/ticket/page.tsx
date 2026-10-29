@@ -1,3 +1,4 @@
+import { Package, Scale } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePage } from "@/lib/auth/dal";
@@ -20,9 +21,11 @@ export default async function TicketPage({ params }: PageProps<"/bales/[ticket]/
       <div className="flex gap-3 print:hidden">
         <PrintButton />
         <Link href="/reception" className="btn">
+          <Scale size={16} aria-hidden />
           Next bale
         </Link>
         <Link href={`/bales/${bale.ticketNumber}`} className="btn">
+          <Package size={16} aria-hidden />
           Bale details
         </Link>
       </div>

@@ -1,3 +1,6 @@
+import { PageTitle } from "@/components/page-title";
+import { Check, Gavel, Package, PackageX, PencilLine, Printer, RotateCcw, Tag, X } from "lucide-react";
+import { Empty } from "@/components/empty";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm, Field, Select } from "@/components/action-form";
@@ -47,16 +50,15 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start gap-3">
-        <div>
-          <h1 className="font-mono text-2xl font-semibold">{bale.ticketNumber}</h1>
-          <p className="text-sm text-muted">
-            {bale.floor.name} ({bale.floor.type.toLowerCase()}) · lane {bale.lane ?? "-"} · received{" "}
-            {bale.receivedAt.toLocaleString("en-ZW")}
-          </p>
-        </div>
+        <PageTitle
+          icon={<Package size={22} />}
+          title={<span className="font-mono">{bale.ticketNumber}</span>}
+          subtitle={`${bale.floor.name} (${bale.floor.type.toLowerCase()}) · lane ${bale.lane ?? "-"} · received ${bale.receivedAt.toLocaleString("en-ZW")}`}
+        />
         <div className="ml-auto flex items-center gap-3">
           <StatusBadge status={bale.status} />
           <Link href={`/bales/${bale.ticketNumber}/ticket`} className="btn">
+            <Printer size={16} aria-hidden />
             Reprint ticket
           </Link>
         </div>
@@ -94,7 +96,7 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
         {gradable && can(user.role, "bale.gradeTimb") && (
           <section className="card">
             <h2 className="mb-2 font-semibold">{timbGrade ? "Re-grade (TIMB)" : "TIMB grade"}</h2>
-            <ActionForm action={gradeAction.bind(null, bale.id, "TIMB")} submitLabel="Save grade" className="space-y-3">
+            <ActionForm action={gradeAction.bind(null, bale.id, "TIMB")} submitLabel="Save grade" icon={<Tag size={16} />} className="space-y-3">
               <Select label="Grade" name="gradeCode" options={gradeOptions} defaultValue={timbGrade?.grade.code} />
             </ActionForm>
             {bale.status === "PRICED" && <p className="mt-2 text-xs text-muted">Re-grading clears the current price.</p>}
@@ -104,7 +106,7 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
         {gradable && can(user.role, "bale.gradeBuyer") && (
           <section className="card">
             <h2 className="mb-2 font-semibold">Buyer grade</h2>
-            <ActionForm action={gradeAction.bind(null, bale.id, "BUYER")} submitLabel="Save buyer grade" className="space-y-3">
+            <ActionForm action={gradeAction.bind(null, bale.id, "BUYER")} submitLabel="Save buyer grade" icon={<Tag size={16} />} className="space-y-3">
               <Select label="Grade" name="gradeCode" options={gradeOptions} defaultValue={buyerGrade?.grade.code} />
             </ActionForm>
           </section>
@@ -113,7 +115,7 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
         {onSale && isAuction && can(user.role, "bale.bid") && (
           <section className="card">
             <h2 className="mb-2 font-semibold">Bid</h2>
-            <ActionForm action={bidAction.bind(null, bale.id)} submitLabel="Place bid" className="space-y-3" resetOnSuccess>
+            <ActionForm action={bidAction.bind(null, bale.id)} submitLabel="Place bid" icon={<Gavel size={16} />} className="space-y-3" resetOnSuccess>
               {can(user.role, "bale.bidAnyBuyer") ? (
                 <Select label="Buyer" name="buyerId" options={buyerOptions} />
               ) : (
@@ -127,7 +129,7 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
         {onSale && can(user.role, "bale.priceOverride") && (
           <section className="card">
             <h2 className="mb-2 font-semibold">Set price (supervisor)</h2>
-            <ActionForm action={overrideAction.bind(null, bale.id)} submitLabel="Set price" className="space-y-3" resetOnSuccess>
+            <ActionForm action={overrideAction.bind(null, bale.id)} submitLabel="Set price" icon={<PencilLine size={16} />} className="space-y-3" resetOnSuccess>
               {!bale.contract && <Select label="Buyer" name="buyerId" options={buyerOptions} />}
               <Field label="Price (USD per kg)" name="price" inputMode="decimal" required />
               <Field label="Reason" name="reason" required hint="Recorded in the audit log." />
@@ -143,12 +145,12 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
               {formatUsd(value!)} for this bale.
             </p>
             <div className="flex gap-3">
-              <ActionForm action={decisionAction.bind(null, bale.id, true)} submitLabel="Grower accepts" className="">
+              <ActionForm action={decisionAction.bind(null, bale.id, true)} submitLabel="Grower accepts" icon={<Check size={16} />} className="">
                 {null}
               </ActionForm>
               <ActionForm
                 action={decisionAction.bind(null, bale.id, false)}
-                submitLabel="Grower rejects"
+                submitLabel="Grower rejects" icon={<X size={16} />}
                 buttonClassName="btn btn-danger"
                 className=""
                 confirm="Record that the grower rejected this price?"
@@ -163,12 +165,12 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
           <section className="card">
             <h2 className="mb-2 font-semibold">Rejected bale</h2>
             <div className="flex gap-3">
-              <ActionForm action={reofferAction.bind(null, bale.id)} submitLabel="Put back on sale" className="">
+              <ActionForm action={reofferAction.bind(null, bale.id)} submitLabel="Put back on sale" icon={<RotateCcw size={16} />} className="">
                 {null}
               </ActionForm>
               <ActionForm
                 action={withdrawAction.bind(null, bale.id)}
-                submitLabel="Withdraw from floor"
+                submitLabel="Withdraw from floor" icon={<PackageX size={16} />}
                 buttonClassName="btn btn-danger"
                 className=""
                 confirm="Withdraw this bale? It cannot be sold on this ticket afterwards."
@@ -218,8 +220,8 @@ export default async function BalePage({ params }: PageProps<"/bales/[ticket]">)
             ))}
             {bale.offers.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-muted">
-                  No offers yet.
+                <td colSpan={5}>
+                  <Empty>No offers yet.</Empty>
                 </td>
               </tr>
             )}

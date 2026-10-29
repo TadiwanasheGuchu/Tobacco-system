@@ -1,3 +1,6 @@
+import { Empty } from "@/components/empty";
+import { PageTitle } from "@/components/page-title";
+import { Wallet } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { requirePage } from "@/lib/auth/dal";
@@ -14,7 +17,7 @@ export default async function SettlementsPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Settlements</h1>
+      <PageTitle icon={<Wallet size={22} />} title="Settlements" />
 
       <section className="card overflow-x-auto">
         <h2 className="mb-2 font-semibold">Growers waiting to be paid</h2>
@@ -40,6 +43,7 @@ export default async function SettlementsPage() {
                     <td className="num">{w._count}</td>
                     <td className="text-right">
                       <Link href={`/settlements/new?growerId=${g.id}`} className="btn btn-primary">
+                        <Wallet size={16} aria-hidden />
                         Prepare settlement
                       </Link>
                     </td>
@@ -85,8 +89,8 @@ export default async function SettlementsPage() {
             ))}
             {settlements.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-muted">
-                  No settlements yet.
+                <td colSpan={7}>
+                  <Empty>No settlements yet.</Empty>
                 </td>
               </tr>
             )}

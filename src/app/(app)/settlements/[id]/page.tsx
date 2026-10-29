@@ -1,3 +1,4 @@
+import { BadgeCheck, Undo2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ActionForm, Field } from "@/components/action-form";
 import { StatusBadge } from "@/components/status-badge";
@@ -122,7 +123,7 @@ export default async function SettlementPage({ params }: PageProps<"/settlements
           <h2 className="mb-2 font-semibold">Release payment</h2>
           <ActionForm
             action={paySettlementAction.bind(null, s.id)}
-            submitLabel="Mark as paid"
+            submitLabel="Mark as paid" icon={<BadgeCheck size={16} />}
             className="flex flex-wrap items-end gap-3"
             confirm="Confirm the payment has been made?"
           >
@@ -135,7 +136,7 @@ export default async function SettlementPage({ params }: PageProps<"/settlements
           <h2 className="mb-2 font-semibold">Reverse settlement</h2>
           <ActionForm
             action={reverseSettlementAction.bind(null, s.id)}
-            submitLabel="Reverse"
+            submitLabel="Reverse" icon={<Undo2 size={16} />}
             buttonClassName="btn btn-danger"
             className="flex flex-wrap items-end gap-3"
             confirm="Reverse this settlement? Its bales go back to accepted."

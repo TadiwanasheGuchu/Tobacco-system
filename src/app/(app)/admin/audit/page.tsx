@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { ScrollText } from "lucide-react";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { AdminNav } from "../admin-nav";
@@ -15,7 +17,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
   );
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Audit log</h1>
+      <PageTitle icon={<ScrollText size={22} />} title="Audit log" />
       <AdminNav />
       <form className="flex gap-2">
         <input name="action" defaultValue={action} className="input max-w-xs" placeholder="Filter, e.g. bale. or settlement." />

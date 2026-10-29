@@ -1,3 +1,4 @@
+import { LogIn } from "lucide-react";
 import { ActionForm, Field } from "@/components/action-form";
 import { BrandMark } from "@/components/brand-mark";
 import { login } from "./actions";
@@ -28,7 +29,7 @@ export default function LoginPage() {
             <h1 className="text-2xl font-semibold">Welcome back</h1>
             <p className="mt-1 text-sm text-muted">Sign in with your floor account to start the day.</p>
           </div>
-          <ActionForm action={login} submitLabel="Sign in" pendingLabel="Signing in…" buttonClassName="btn btn-primary w-full">
+          <ActionForm action={login} submitLabel="Sign in" icon={<LogIn size={16} />} pendingLabel="Signing in…" buttonClassName="btn btn-primary w-full">
             <Field label="Username" name="username" autoComplete="username" required autoFocus />
             <Field label="Password" name="password" type="password" autoComplete="current-password" required />
           </ActionForm>

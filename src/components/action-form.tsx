@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef, type ReactNode } from "react";
 import type { ActionState } from "@/lib/action";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useFlash } from "./flash";
 
 interface Props {
@@ -14,6 +15,8 @@ interface Props {
   /** Ask before submitting, for actions that are hard to undo. */
   confirm?: string;
   resetOnSuccess?: boolean;
+  /** A Lucide icon element shown before the button label, e.g. <Printer size={16} />. */
+  icon?: ReactNode;
 }
 
 export function ActionForm({
@@ -25,6 +28,7 @@ export function ActionForm({
   buttonClassName = "btn btn-primary",
   confirm,
   resetOnSuccess,
+  icon,
 }: Props) {
   const flash = useFlash();
   const [state, formAction, pending] = useActionState(async (prev: ActionState, formData: FormData) => {
@@ -56,10 +60,12 @@ export function ActionForm({
       {children}
       <div className="flex flex-wrap items-center gap-3 pt-1">
         <button type="submit" className={buttonClassName} disabled={pending}>
+          {pending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : icon}
           {pending ? pendingLabel : submitLabel}
         </button>
         {state?.error && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="flex items-center gap-1.5 text-sm text-danger">
+            <AlertCircle size={16} className="shrink-0" aria-hidden />
             {state.error}
           </p>
         )}

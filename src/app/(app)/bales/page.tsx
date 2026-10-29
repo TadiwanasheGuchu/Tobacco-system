@@ -1,3 +1,6 @@
+import { Empty } from "@/components/empty";
+import { PageTitle } from "@/components/page-title";
+import { Package, Search } from "lucide-react";
 import Link from "next/link";
 import { ActionForm, Field } from "@/components/action-form";
 import { StatusBadge } from "@/components/status-badge";
@@ -37,8 +40,8 @@ export default async function BalesPage({ searchParams }: PageProps<"/bales">) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Bales</h1>
-      <ActionForm action={findTicketAction} submitLabel="Open" className="card flex flex-wrap items-end gap-3">
+      <PageTitle icon={<Package size={22} />} title="Bales" />
+      <ActionForm action={findTicketAction} submitLabel="Open" icon={<Search size={16} />} className="card flex flex-wrap items-end gap-3">
         <Field label="Scan or type a ticket number" name="ticket" autoFocus autoComplete="off" required />
       </ActionForm>
 
@@ -99,8 +102,8 @@ export default async function BalesPage({ searchParams }: PageProps<"/bales">) {
             ))}
             {bales.length === 0 && (
               <tr>
-                <td colSpan={9} className="text-muted">
-                  No bales match.
+                <td colSpan={9}>
+                  <Empty>No bales match.</Empty>
                 </td>
               </tr>
             )}

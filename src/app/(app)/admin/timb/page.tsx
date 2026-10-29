@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { RotateCcw, Send } from "lucide-react";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/status-badge";
 import { requirePage } from "@/lib/auth/dal";
@@ -13,7 +15,7 @@ export default async function TimbPage() {
   ]);
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">TIMB outbox</h1>
+      <PageTitle icon={<Send size={22} />} title="TIMB outbox" />
       <AdminNav />
       <p className="text-sm text-muted">
         Every bale received, sold or rejected is queued here in the same transaction as the floor action, then delivered to
@@ -25,7 +27,7 @@ export default async function TimbPage() {
             <StatusBadge status={c.status} /> {c._count}
           </span>
         ))}
-        <ActionForm action={processOutboxAction} submitLabel="Send due messages now" className="ml-auto">
+        <ActionForm action={processOutboxAction} submitLabel="Send due messages now" icon={<Send size={16} />} className="ml-auto">
           {null}
         </ActionForm>
       </div>
@@ -53,7 +55,7 @@ export default async function TimbPage() {
                 <td className="max-w-xs truncate">{m.timbReference ?? m.lastError ?? ""}</td>
                 <td>
                   {m.status === "FAILED" && (
-                    <ActionForm action={retryOutboxAction.bind(null, m.id)} submitLabel="Retry" buttonClassName="btn" className="">
+                    <ActionForm action={retryOutboxAction.bind(null, m.id)} submitLabel="Retry" icon={<RotateCcw size={16} />} buttonClassName="btn" className="">
                       {null}
                     </ActionForm>
                   )}

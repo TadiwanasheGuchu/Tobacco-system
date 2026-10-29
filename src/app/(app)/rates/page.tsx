@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { ArrowLeftRight, Save } from "lucide-react";
 import { ActionForm, Field } from "@/components/action-form";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -12,12 +14,12 @@ export default async function RatesPage() {
   ]);
   return (
     <div className="max-w-xl space-y-4">
-      <h1 className="text-2xl font-semibold">ZiG exchange rate</h1>
+      <PageTitle icon={<ArrowLeftRight size={22} />} title="ZiG exchange rate" />
       <p className="text-sm text-muted">
         Settlements pay {split ? `${formatNumber(split.usdPercent, 0)}% in USD and the rest` : "part"} in ZiG at the latest
         rate captured today. Without a rate for today, settlements with a ZiG portion are blocked.
       </p>
-      <ActionForm action={captureRateAction} submitLabel="Save rate" className="card flex flex-wrap items-end gap-3" resetOnSuccess>
+      <ActionForm action={captureRateAction} submitLabel="Save rate" icon={<Save size={16} />} className="card flex flex-wrap items-end gap-3" resetOnSuccess>
         <Field label="ZiG per 1 USD" name="zigPerUsd" inputMode="decimal" required />
       </ActionForm>
       <div className="card">

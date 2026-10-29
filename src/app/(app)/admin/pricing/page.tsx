@@ -1,3 +1,5 @@
+import { PageTitle } from "@/components/page-title";
+import { Plus, Save, Tags } from "lucide-react";
 import { ActionForm, Field, Select } from "@/components/action-form";
 import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
@@ -22,7 +24,7 @@ export default async function PricingPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">Grades & contract prices</h1>
+      <PageTitle icon={<Tags size={22} />} title="Grades & contract prices" />
       <AdminNav />
       <p className="text-sm text-muted">
         Contract floor bales are priced automatically from the contractor&apos;s list for season {season?.year ?? "-"}. A new
@@ -61,7 +63,7 @@ export default async function PricingPage() {
       </section>
       <section className="card">
         <h2 className="mb-2 font-semibold">Set a contract price</h2>
-        <ActionForm action={setGradePriceAction} submitLabel="Save price" className="grid gap-3 sm:grid-cols-4" resetOnSuccess>
+        <ActionForm action={setGradePriceAction} submitLabel="Save price" icon={<Save size={16} />} className="grid gap-3 sm:grid-cols-4" resetOnSuccess>
           <Select label="Contractor" name="buyerId" options={buyers.map((b) => ({ value: b.id, label: b.code }))} />
           <Select label="Grade" name="gradeId" options={grades.map((g) => ({ value: g.id, label: g.code }))} />
           <Field label="USD per kg" name="pricePerKgUsd" inputMode="decimal" required />
@@ -69,7 +71,7 @@ export default async function PricingPage() {
       </section>
       <section className="card">
         <h2 className="mb-2 font-semibold">Add grade</h2>
-        <ActionForm action={createGradeAction} submitLabel="Add grade" className="grid gap-3 sm:grid-cols-3" resetOnSuccess>
+        <ActionForm action={createGradeAction} submitLabel="Add grade" icon={<Plus size={16} />} className="grid gap-3 sm:grid-cols-3" resetOnSuccess>
           <Field label="Code" name="code" required />
           <Field label="Description" name="description" required />
         </ActionForm>
