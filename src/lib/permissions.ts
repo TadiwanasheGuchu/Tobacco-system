@@ -17,6 +17,8 @@ export type Permission =
   | "settlement.reverse"
   | "contract.manage"
   | "rates.capture"
+  | "reports.view"
+  | "timb.dailyReturn"
   | "admin";
 
 const ALL: Permission[] = [
@@ -36,6 +38,8 @@ const ALL: Permission[] = [
   "settlement.reverse",
   "contract.manage",
   "rates.capture",
+  "reports.view",
+  "timb.dailyReturn",
   "admin",
 ];
 
@@ -46,7 +50,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   CLASSIFIER: ["bale.view", "bale.gradeTimb"],
   BUYER: ["bale.view", "bale.gradeBuyer", "bale.bid"],
   // Cashiers prepare settlements; a supervisor releases payment (two-person rule).
-  CASHIER: ["grower.view", "bale.view", "settlement.view", "settlement.create", "rates.capture"],
+  CASHIER: ["grower.view", "bale.view", "settlement.view", "settlement.create", "rates.capture", "reports.view"],
 };
 
 export function can(role: Role, permission: Permission): boolean {

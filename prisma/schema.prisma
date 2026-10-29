@@ -233,6 +233,7 @@ model Bale {
 
   @@index([growerId, status])
   @@index([floorId, receivedAt])
+  @@index([status, decisionAt])
 }
 
 model BaleGrading {

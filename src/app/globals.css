@@ -105,7 +105,8 @@ body {
   border-bottom: 1px solid var(--border);
   padding: 0.45rem 0.5rem;
 }
-.num {
+.num,
+.table th.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }

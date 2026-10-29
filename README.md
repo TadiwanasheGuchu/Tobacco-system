@@ -50,12 +50,29 @@ Payment needs two people: whoever prepares a settlement cannot also release the 
 - **Manual weights are flagged.** A weight typed in at reception is recorded as `MANUAL` and printed with "(M)" on the ticket. Only the scale integration (coming next) will record `SCALE` weights.
 - **Rules are data, not code.** Levies, commissions, fees, the USD/ZiG split and contract prices each take effect from a date and are edited under **Admin**. The ZiG rate is captured daily, and settlements with a ZiG portion are blocked until today's rate is in.
 
+## Reports
+
+**Reports** is open to supervisors, cashiers and admins. Choose a date range and a floor to see:
+
+- received and sold bales and mass, sales value, average price, and the rejection rate
+- sales by grade, by buyer and by floor
+- payouts: gross, each deduction, net, the USD and ZiG amounts, paid versus waiting for release, and the split by payment method
+- input loan recovery per contractor for the open season
+
+Each table downloads as a CSV file that opens in Excel. The **payment list** CSV shows each grower's bank or mobile money details next to the amounts. It is the starting point for bank batch files, which come once we know each bank's file format.
+
+A bale counts as sold on the day the grower accepts its price. Bale values are rounded to cents per bale, the same way statements do it, so reports match the statements.
+
+Supervisors and admins can also queue a **TIMB daily summary**: one per floor and day, listing bales, mass and value broken down by TIMB grade. Each floor and day can only be queued once.
+
+Dates use the server's local time. Set `TZ=Africa/Harare`.
+
 ## TIMB integration
 
 TIMB does not publish a public API. It gives licensed buyers the integration spec and credentials directly. Because of that, all TIMB-specific code sits behind one interface in `src/lib/timb/adapter.ts`:
 
 - `verifyGrower()` checks the grower number and national ID at registration. If TIMB can't be reached, the grower is saved but cannot sell until verified.
-- `submit()` sends `BALE_RECEIVED`, `BALE_SOLD` and `BALE_REJECTED` messages.
+- `submit()` sends `BALE_RECEIVED`, `BALE_SOLD` and `BALE_REJECTED` messages, plus the `DAILY_SUMMARY` queued from Reports.
 
 Messages use a **transactional outbox** (the `TimbOutbox` table):
 
@@ -114,5 +131,4 @@ Every server action re-checks the session and permission itself (`requireAction`
 2. **Floor server and HQ sync.** Each floor runs on its own server and keeps trading through internet outages, then syncs to head office.
 3. **Live TIMB adapter**, once TIMB provides the spec and credentials.
 4. **Payment files:** bank batch files and mobile money disbursement, with reconciliation.
-5. **Reports:** daily floor summary, sales by grade and buyer, loan recovery, and a TIMB daily return.
-6. **Handheld devices:** an installable web app (PWA) for classifiers and buyers on the floor.
+5. **Handheld devices:** an installable web app (PWA) for classifiers and buyers on the floor.

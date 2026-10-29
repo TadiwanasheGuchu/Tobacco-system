@@ -9,6 +9,7 @@ const NAV: { href: string; label: string; permission: Permission }[] = [
   { href: "/bales", label: "Bales", permission: "bale.view" },
   { href: "/growers", label: "Growers", permission: "grower.view" },
   { href: "/settlements", label: "Settlements", permission: "settlement.view" },
+  { href: "/reports", label: "Reports", permission: "reports.view" },
   { href: "/rates", label: "Exchange rate", permission: "rates.capture" },
   { href: "/admin", label: "Admin", permission: "admin" },
 ];
