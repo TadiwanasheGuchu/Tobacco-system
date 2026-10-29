@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Package,
   Scale,
+  ScanLine,
   Settings,
   Users,
   Wallet,
@@ -16,6 +17,7 @@ import {
 
 const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
+  floor: ScanLine,
   reception: Scale,
   bales: Package,
   growers: Users,

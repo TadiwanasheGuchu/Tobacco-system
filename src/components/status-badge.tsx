@@ -17,7 +17,7 @@ const TONES: Record<string, { cls: string; label?: string }> = {
 export function StatusBadge({ status }: { status: string }) {
   const tone = TONES[status] ?? { cls: "bg-surface-2" };
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.cls}`}>
+    <span className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.cls}`}>
       <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" aria-hidden />
       {tone.label ?? status.charAt(0) + status.slice(1).toLowerCase()}
     </span>

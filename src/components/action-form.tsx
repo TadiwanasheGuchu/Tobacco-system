@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef, type ReactNode } from "react";
 import type { ActionState } from "@/lib/action";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useFlash } from "./flash";
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
   resetOnSuccess?: boolean;
   /** A Lucide icon element shown before the button label, e.g. <Printer size={16} />. */
   icon?: ReactNode;
+  /** Where to go after a successful submit (e.g. back to the scan screen). */
+  successHref?: string;
 }
 
 export function ActionForm({
@@ -29,13 +32,16 @@ export function ActionForm({
   confirm,
   resetOnSuccess,
   icon,
+  successHref,
 }: Props) {
+  const router = useRouter();
   const flash = useFlash();
   const [state, formAction, pending] = useActionState(async (prev: ActionState, formData: FormData) => {
     const result = await action(prev, formData);
     // Raised here rather than in an effect: the form may unmount in the same
     // render that delivers the result (its section disappears after the action).
     if (result?.ok) flash?.(result.ok);
+    if (result?.ok && successHref) router.push(successHref);
     return result;
   }, null);
   const formRef = useRef<HTMLFormElement>(null);

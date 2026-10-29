@@ -9,6 +9,7 @@ import { logout } from "../login/actions";
 
 const NAV: (NavItem & { permission?: Permission })[] = [
   { href: "/", label: "Today", icon: "dashboard" },
+  { href: "/floor", label: "Floor (scan)", icon: "floor", permission: "bale.view" },
   { href: "/reception", label: "Reception", icon: "reception", permission: "bale.receive" },
   { href: "/bales", label: "Bales", icon: "bales", permission: "bale.view" },
   { href: "/growers", label: "Growers", icon: "growers", permission: "grower.view" },

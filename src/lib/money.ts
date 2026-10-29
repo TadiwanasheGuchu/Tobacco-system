@@ -29,3 +29,9 @@ export function formatNumber(value: DecimalInput, dp: number): string {
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return frac ? `${grouped}.${frac}` : grouped;
 }
+
+/** Price per kg: at least 2 and at most 4 decimals, e.g. "US$3.40" or "US$3.425". */
+export function formatPricePerKg(value: DecimalInput): string {
+  const fixed = dec(value).toFixed(4).replace(/0{1,2}$/, "");
+  return `US$${fixed}`;
+}

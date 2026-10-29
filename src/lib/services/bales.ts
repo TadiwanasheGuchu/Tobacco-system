@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { BaleStatus, GradingKind } from "@/generated/prisma/enums";
 import { audit, db, nextSequence, Tx } from "@/lib/db";
-import { dec } from "@/lib/money";
+import { dec, formatPricePerKg } from "@/lib/money";
 import { formatTicketNumber } from "@/lib/ticket";
 import { enqueueTimb } from "@/lib/timb/outbox";
 import { activeSeason, Actor, DomainError, lockBale } from "./common";
@@ -161,7 +161,7 @@ export async function placeBid(actor: Actor, baleId: string, buyerId: string, pr
     const buyer = await tx.buyer.findUnique({ where: { id: buyerId } });
     if (!buyer?.active) throw new DomainError("Buyer not found or not licensed.");
     if (bale.currentOffer && price.lte(dec(bale.currentOffer.pricePerKgUsd))) {
-      throw new DomainError(`Bid must be higher than the current US$${dec(bale.currentOffer.pricePerKgUsd).toFixed(4)}/kg.`);
+      throw new DomainError(`Bid must be higher than the current ${formatPricePerKg(bale.currentOffer.pricePerKgUsd)}/kg.`);
     }
     const offer = await tx.baleOffer.create({
       data: { baleId, buyerId, pricePerKgUsd: price.toFixed(4), source: "AUCTION_BID", createdById: actor.id },
