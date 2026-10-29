@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { ActionState, runAction, str } from "@/lib/action";
 import { requireAction } from "@/lib/auth/dal";
+import { audit, db } from "@/lib/db";
 import { addContract, GrowerInput, registerGrower, reverifyGrower, setGrowerStatus } from "@/lib/services/growers";
 
 const GROWER_FIELDS = [
@@ -60,5 +61,17 @@ export async function addContractAction(growerId: string, _: ActionState, formDa
     });
     refresh();
     return "Contract added.";
+  });
+}
+
+export async function setSmsOptInAction(growerId: string, optIn: boolean, _: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    const user = await requireAction("grower.register");
+    await db.$transaction(async (tx) => {
+      await tx.grower.update({ where: { id: growerId }, data: { smsOptIn: optIn } });
+      await audit(tx, user.id, optIn ? "grower.smsOn" : "grower.smsOff", "Grower", growerId);
+    });
+    refresh();
+    return optIn ? "Text messages switched on." : "Text messages switched off.";
   });
 }

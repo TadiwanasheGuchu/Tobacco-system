@@ -85,6 +85,18 @@ A settlement is marked **paid** once each part it needs (USD and/or ZiG) is in a
 
 > The file layouts are generic. Each bank and mobile money provider has its own upload template, so map the columns (in `src/app/(app)/payments/[id]/file/route.ts`) once you have their spec.
 
+## Text messages to growers
+
+Growers get an SMS when:
+
+- **a bale is sold**, with its mass, grade, price, buyer and approximate value;
+- **their statement is ready**, with the net amount, the USD and ZiG parts, and how they will be paid;
+- **money is sent**, once a payment batch is confirmed, with the amount and the reference.
+
+Each text is one standard SMS (160 characters, plain GSM characters), which the tests check. Texts go to the grower's phone, or to their mobile money number if no phone is saved. A grower can ask to stop them, using the switch on their page. Texts are queued in the same transaction as the event and sent by `npm run worker`, with retries. Delivery and failures are listed under **Admin → Text messages**.
+
+`SMS_MODE=mock` only logs the texts. To go live, choose a Zimbabwe SMS gateway and add an adapter in `src/lib/sms/`.
+
 ## Reports
 
 **Reports** is open to supervisors, cashiers and admins. Choose a date range and a floor to see:
@@ -127,7 +139,7 @@ npm install                   # also generates the Prisma client
 npm run db:deploy             # apply migrations
 npm run db:seed               # demo floors, buyers, grades, prices, growers and users
 npm run dev                   # http://localhost:3000
-npm run worker                # in a second terminal: delivers TIMB messages
+npm run worker                # in a second terminal: delivers TIMB records and text messages
 ```
 
 The seed creates these accounts, all with the password `ChangeMe2026` (or `SEED_PASSWORD`): `admin`, `supervisor`, `reception`, `reception2`, `classifier`, `buyer1`, `buyer2` and `cashier`.
@@ -143,7 +155,7 @@ The seed creates these accounts, all with the password `ChangeMe2026` (or `SEED_
 | `npm run db:migrate` | Create a migration after changing `prisma/schema.prisma` |
 | `npm run db:deploy` | Apply migrations (production) |
 | `npm run db:seed` | Demo data |
-| `npm run worker` | TIMB outbox worker |
+| `npm run worker` | Delivers TIMB records and grower text messages |
 
 ## Changing the look
 
@@ -159,7 +171,8 @@ src/lib/timb/               TIMB adapter interface, mock, outbox
 src/lib/auth/               sessions (DB-backed, httpOnly cookie), scrypt passwords, access checks
 src/lib/permissions.ts      role → permission map
 src/app/(app)/              screens; each folder's actions.ts holds its server actions
-scripts/                    seed and TIMB worker
+scripts/                    seed and the outbox worker
+agent/                      reception agent: scale + label printer (own README)
 ```
 
 Every server action re-checks the session and permission itself (`requireAction`). `src/proxy.ts` only redirects visitors with no session cookie to the login page.
@@ -169,4 +182,5 @@ Every server action re-checks the session and permission itself (`requireAction`
 1. **Try the agent on the real scale and printer:** adjust `WEIGHT_PATTERN` and `STABLE_PATTERN` to match the indicator's output.
 2. **Floor server and HQ sync.** Each floor runs on its own server and keeps trading through internet outages, then syncs to head office.
 3. **Live TIMB adapter**, once TIMB provides the spec and credentials.
-4. **Provider file formats:** each bank's and mobile money provider's exact upload template, plus automatic reconciliation of their statements.
+4. **SMS gateway:** pick a provider and add its adapter, plus Shona and Ndebele versions of the texts.
+5. **Provider file formats:** each bank's and mobile money provider's exact upload template, plus automatic reconciliation of their statements.

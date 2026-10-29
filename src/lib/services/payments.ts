@@ -3,6 +3,8 @@ import type { Currency, PaymentMethod } from "@/generated/prisma/enums";
 import { audit, db, nextSequence } from "@/lib/db";
 import { dec, Decimal } from "@/lib/money";
 import { normalizeBankAccount, normalizeZwMobile } from "@/lib/payee";
+import { paymentSentSms } from "@/lib/sms/messages";
+import { enqueueSms } from "@/lib/sms/outbox";
 import { activeSeason, Actor, DomainError } from "./common";
 
 /**
@@ -139,7 +141,7 @@ export async function confirmPaymentBatch(actor: Actor, batchId: string, bankRef
   if (!bankReference.trim()) throw new DomainError("Enter the bank or provider's confirmation reference.");
   return db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "PaymentBatch" WHERE id = ${batchId} FOR UPDATE`;
-    const batch = await tx.paymentBatch.findUnique({ where: { id: batchId }, include: { lines: { include: { settlement: true } } } });
+    const batch = await tx.paymentBatch.findUnique({ where: { id: batchId }, include: { lines: { include: { settlement: { include: { grower: true } } } } } });
     if (!batch) throw new DomainError("Batch not found.");
     if (batch.status !== "OPEN") throw new DomainError(`This batch is already ${batch.status.toLowerCase()}.`);
     const own = batch.lines.filter((l) => l.settlement.createdById === actor.id);
@@ -158,6 +160,20 @@ export async function confirmPaymentBatch(actor: Actor, batchId: string, bankRef
     let paid = 0;
     for (const line of batch.lines) {
       const s = line.settlement;
+      // Tell the grower this part of their money has gone out.
+      await enqueueSms(
+        tx,
+        "PAYMENT_SENT",
+        line.id,
+        s.grower,
+        paymentSentSms({
+          number: s.number,
+          amount: line.amount,
+          currency: batch.currency,
+          method: batch.method === "MOBILE_MONEY" ? "mobile money" : "bank transfer",
+          reference: `${batch.number} ${bankReference.trim()}`.slice(0, 30),
+        }),
+      );
       if (s.status !== "APPROVED") continue;
       const confirmed = await tx.paymentBatchLine.findMany({
         where: { settlementId: s.id, batch: { status: "CONFIRMED" } },

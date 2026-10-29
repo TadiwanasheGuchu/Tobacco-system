@@ -4,6 +4,8 @@ import { audit, db, nextSequence, Tx } from "@/lib/db";
 import { dec, formatPricePerKg } from "@/lib/money";
 import { verifyReading } from "@/lib/scale-reading";
 import { formatTicketNumber } from "@/lib/ticket";
+import { baleSoldSms } from "@/lib/sms/messages";
+import { enqueueSms } from "@/lib/sms/outbox";
 import { enqueueTimb } from "@/lib/timb/outbox";
 import { activeSeason, Actor, DomainError, lockBale } from "./common";
 
@@ -251,6 +253,22 @@ export async function recordDecision(actor: Actor, baleId: string, accept: boole
     await audit(tx, actor.id, accept ? "bale.accept" : "bale.reject", "Bale", baleId, {
       offerId: bale.currentOffer.id,
     });
+    if (accept) {
+      await enqueueSms(
+        tx,
+        "BALE_SOLD",
+        baleId,
+        bale.grower,
+        baleSoldSms({
+          floorCode: bale.floor.code,
+          ticket: bale.ticketNumber,
+          massKg: bale.massKg,
+          grade: timbGrade?.grade.code ?? null,
+          pricePerKg: bale.currentOffer.pricePerKgUsd,
+          buyerCode: buyer.code,
+        }),
+      );
+    }
     await enqueueTimb(tx, accept ? "BALE_SOLD" : "BALE_REJECTED", baleId, {
       ticketNumber: bale.ticketNumber,
       timbGrowerNumber: bale.grower.timbGrowerNumber,

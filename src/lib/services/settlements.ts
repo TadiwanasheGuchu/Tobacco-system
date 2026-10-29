@@ -4,6 +4,10 @@ import { dec, Decimal } from "@/lib/money";
 import { calculateSettlement, CalcResult, SettlementCalcError } from "@/lib/settlement-calc";
 import { activeSeason, Actor, DomainError, startOfToday } from "./common";
 import { isInLiveBatch } from "./payments";
+import { statementReadySms } from "@/lib/sms/messages";
+import { enqueueSms } from "@/lib/sms/outbox";
+
+export const METHOD_WORDS = { BANK_TRANSFER: "bank transfer", MOBILE_MONEY: "mobile money", CASH: "cash" } as const;
 
 const LOAN_RECOVERY_MAX_PERCENT = process.env.LOAN_RECOVERY_MAX_PERCENT ?? "100";
 
@@ -163,6 +167,20 @@ export async function createSettlement(actor: Actor, growerId: string, group: Se
       },
     });
     await tx.bale.updateMany({ where: { id: { in: bales.map((b) => b.id) } }, data: { status: "SETTLED" } });
+    await enqueueSms(
+      tx,
+      "STATEMENT_READY",
+      settlement.id,
+      grower,
+      statementReadySms({
+        number,
+        bales: bales.length,
+        netUsd: calc.netUsd,
+        payUsd: calc.payUsd,
+        payZig: calc.payZig,
+        method: METHOD_WORDS[paymentMethod],
+      }),
+    );
     await audit(tx, actor.id, "settlement.create", "Settlement", settlement.id, {
       number,
       netUsd: calc.netUsd.toFixed(2),

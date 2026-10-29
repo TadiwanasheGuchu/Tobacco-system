@@ -1,5 +1,5 @@
 import { PageTitle } from "@/components/page-title";
-import { Ban, FilePlus2, ShieldCheck, UserCheck, UserRound, Wallet } from "lucide-react";
+import { Ban, FilePlus2, MessageSquareOff, MessageSquareText, ShieldCheck, UserCheck, UserRound, Wallet } from "lucide-react";
 import { Empty } from "@/components/empty";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -9,7 +9,7 @@ import { requirePage } from "@/lib/auth/dal";
 import { db } from "@/lib/db";
 import { dec, formatNumber, formatUsd } from "@/lib/money";
 import { can } from "@/lib/permissions";
-import { addContractAction, reverifyGrowerAction, setGrowerStatusAction } from "../actions";
+import { addContractAction, reverifyGrowerAction, setGrowerStatusAction, setSmsOptInAction } from "../actions";
 
 export default async function GrowerPage({ params }: PageProps<"/growers/[id]">) {
   const user = await requirePage("grower.view");
@@ -60,11 +60,26 @@ export default async function GrowerPage({ params }: PageProps<"/growers/[id]">)
         </div>
       )}
 
-      <section className="card text-sm">
-        <h2 className="mb-2 font-semibold">Payment details</h2>
-        <p>
-          Bank: {grower.bankName ?? "-"} {grower.bankAccountNumber ?? ""} · Mobile money: {grower.mobileMoneyNumber ?? "-"}
-        </p>
+      <section className="card flex flex-wrap items-center gap-4 text-sm">
+        <div className="flex-1">
+          <h2 className="mb-1 font-semibold">Payment and contact details</h2>
+          <p>
+            Bank: {grower.bankName ?? "-"} {grower.bankAccountNumber ?? ""} · Mobile money: {grower.mobileMoneyNumber ?? "-"} · Phone:{" "}
+            {grower.phone ?? "-"}
+          </p>
+          <p className="text-muted">Text messages: {grower.smsOptIn ? "on (sale, statement and payment)" : "off at the grower's request"}</p>
+        </div>
+        {can(user.role, "grower.register") && (
+          <ActionForm
+            action={setSmsOptInAction.bind(null, grower.id, !grower.smsOptIn)}
+            submitLabel={grower.smsOptIn ? "Stop text messages" : "Send text messages"}
+            icon={grower.smsOptIn ? <MessageSquareOff size={16} /> : <MessageSquareText size={16} />}
+            buttonClassName="btn"
+            className=""
+          >
+            {null}
+          </ActionForm>
+        )}
       </section>
 
       <section className="card space-y-3">

@@ -183,6 +183,8 @@ model Grower {
   bankName          String?
   bankAccountNumber String?
   mobileMoneyNumber String?
+  /// Sale and payment text messages; growers can ask to stop them.
+  smsOptIn          Boolean      @default(true)
   status            GrowerStatus @default(ACTIVE)
   timbVerifiedAt    DateTime?
   createdAt         DateTime     @default(now())
@@ -452,6 +454,27 @@ model TimbOutbox {
   nextAttemptAt DateTime     @default(now())
 
   @@index([status, nextAttemptAt])
+}
+
+/// Text messages to growers, queued in the same transaction as the event and
+/// sent by the worker (like the TIMB outbox).
+model SmsOutbox {
+  id            String       @id @default(cuid())
+  kind          String
+  entityId      String
+  growerId      String
+  toNumber      String
+  body          String
+  status        OutboxStatus @default(PENDING)
+  attempts      Int          @default(0)
+  lastError     String?
+  providerRef   String?
+  createdAt     DateTime     @default(now())
+  sentAt        DateTime?
+  nextAttemptAt DateTime     @default(now())
+
+  @@index([status, nextAttemptAt])
+  @@index([growerId])
 }
 
 /// Named counters for human-readable numbers (bale tickets, settlements).

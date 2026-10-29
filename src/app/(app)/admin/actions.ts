@@ -8,6 +8,7 @@ import { hashPassword, passwordProblem } from "@/lib/auth/password";
 import { audit, db } from "@/lib/db";
 import { Role, ChargeKind, FloorType } from "@/generated/prisma/enums";
 import { DomainError } from "@/lib/services/common";
+import { processSmsOutbox } from "@/lib/sms/outbox";
 import { processOutbox } from "@/lib/timb/outbox";
 
 const decimal = (v: string, label: string, dp = 4) => {
@@ -274,5 +275,26 @@ export async function setScaleActiveAction(stationId: string, active: boolean, _
     });
     refresh();
     return active ? "Station switched on." : "Station switched off. Its readings are refused.";
+  });
+}
+
+export async function processSmsAction(_: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    await requireAction("admin");
+    const { sent, failed } = await processSmsOutbox();
+    refresh();
+    return `Sent ${sent}, failed ${failed}.`;
+  });
+}
+
+export async function retrySmsAction(id: string, _: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    const admin = await requireAction("admin");
+    await db.$transaction(async (tx) => {
+      await tx.smsOutbox.update({ where: { id }, data: { status: "PENDING", attempts: 0, nextAttemptAt: new Date() } });
+      await audit(tx, admin.id, "sms.retry", "SmsOutbox", id);
+    });
+    refresh();
+    return "Queued for retry.";
   });
 }

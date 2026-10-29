@@ -7,6 +7,7 @@ const LINKS = [
   ["/admin/charges", "Charges & payment split"],
   ["/admin/scales", "Scales"],
   ["/admin/timb", "TIMB outbox"],
+  ["/admin/sms", "Text messages"],
   ["/admin/audit", "Audit log"],
 ];
 
