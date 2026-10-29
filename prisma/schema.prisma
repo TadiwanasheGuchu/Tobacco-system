@@ -123,13 +123,29 @@ model Session {
 }
 
 model Floor {
-  id     String    @id @default(cuid())
-  code   String    @unique
+  id     String         @id @default(cuid())
+  code   String         @unique
   name   String
   type   FloorType
-  active Boolean   @default(true)
+  active Boolean        @default(true)
   users  User[]
   bales  Bale[]
+  scales ScaleStation[]
+}
+
+/// A reception PC with a scale. Its agent signs every weight with this
+/// station's secret, so the server can tell real scale weights from typed ones.
+model ScaleStation {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  name       String
+  floorId    String
+  floor      Floor     @relation(fields: [floorId], references: [id])
+  secret     String
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  bales      Bale[]
 }
 
 model Season {
@@ -241,6 +257,11 @@ model Bale {
   gradings        BaleGrading[]
   offers          BaleOffer[]      @relation("BaleOffers")
   settlementLines SettlementLine[]
+  /// For scale weights: the station that weighed the bale, and the signed
+  /// reading's nonce (unique, so one reading can never be used for two bales).
+  scaleStationId  String?
+  scaleStation    ScaleStation?    @relation(fields: [scaleStationId], references: [id])
+  scaleReadingId  String?          @unique
 
   @@index([growerId, status])
   @@index([floorId, receivedAt])

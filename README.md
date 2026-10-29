@@ -50,6 +50,16 @@ Payment needs two people: whoever prepares a settlement cannot also release the 
 - **Manual weights are flagged.** A weight typed in at reception is recorded as `MANUAL` and printed with "(M)" on the ticket. Only the scale integration (coming next) will record `SCALE` weights.
 - **Rules are data, not code.** Levies, commissions, fees, the USD/ZiG split and contract prices each take effect from a date and are edited under **Admin**. The ZiG rate is captured daily, and settlements with a ZiG portion are blocked until today's rate is in.
 
+## Scales and label printers
+
+Each reception PC runs the **reception agent** (`agent/`, with its own README). It reads the scale indicator over the serial port and prints tickets on Zebra label printers.
+
+- **Weights are signed.** Once a weight is stable, the agent signs it with the station's secret, which is set under **Admin → Scales**. The server saves a bale as a `SCALE` weight only if the signature, the station and the floor all check out and the reading is less than two minutes old. Each reading can be used for one bale only. A weight changed in the browser is refused.
+- **Reception screen:** shows the live weight, turns green when it is stable, and saves the bale with that reading. Typing the weight is still possible and is marked `MANUAL` and "(M)" on the ticket. Once every desk has a working scale, set `ALLOW_MANUAL_WEIGHTS=false` so that only supervisors can type a weight.
+- **Labels:** after saving, the ticket goes straight to the label printer as a 100 × 75 mm label with a Code 128 barcode. Reloading the page doesn't print it again. "Print on paper" is kept as a fallback.
+
+To test without a scale, run the agent with `SCALE_PORT=sim`. The simulator puts bales on and takes them off every few seconds.
+
 ## Handheld app (phones and scanners)
 
 The **Floor (scan)** screen (`/floor`) is built for phones and rugged Android scanners on the floor:
@@ -156,7 +166,7 @@ Every server action re-checks the session and permission itself (`requireAction`
 
 ## Roadmap
 
-1. **Scale and printer agent.** A small service on each reception PC that reads the scale over its serial port and prints tickets on Zebra label printers.
+1. **Try the agent on the real scale and printer:** adjust `WEIGHT_PATTERN` and `STABLE_PATTERN` to match the indicator's output.
 2. **Floor server and HQ sync.** Each floor runs on its own server and keeps trading through internet outages, then syncs to head office.
 3. **Live TIMB adapter**, once TIMB provides the spec and credentials.
 4. **Provider file formats:** each bank's and mobile money provider's exact upload template, plus automatic reconciliation of their statements.

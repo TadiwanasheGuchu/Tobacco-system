@@ -24,13 +24,13 @@ export async function receiveBaleAction(_: ActionState, formData: FormData): Pro
       timbGrowerNumber: str(formData, "timbGrowerNumber"),
       floorId: str(formData, "floorId"),
       massKg: str(formData, "massKg"),
-      // Only the scale agent may record SCALE weights; anything typed in is MANUAL.
-      weighSource: "MANUAL",
+      // Signed by the reception agent; without it the weight is typed (MANUAL).
+      scaleReading: str(formData, "scaleReading") || undefined,
       lane: str(formData, "lane"),
     });
     ticket = bale.ticketNumber;
   });
-  if (ticket) redirect(`/bales/${ticket}/ticket`);
+  if (ticket) redirect(`/bales/${ticket}/ticket?autoprint=1`);
   return result;
 }
 

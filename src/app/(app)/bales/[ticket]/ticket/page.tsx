@@ -6,10 +6,12 @@ import { code128Svg } from "@/lib/barcode";
 import { db } from "@/lib/db";
 import { formatNumber } from "@/lib/money";
 import { PrintButton } from "@/components/print-button";
+import { PrintLabelButton } from "@/components/print-label-button";
 
-export default async function TicketPage({ params }: PageProps<"/bales/[ticket]/ticket">) {
+export default async function TicketPage({ params, searchParams }: PageProps<"/bales/[ticket]/ticket">) {
   await requirePage("bale.view");
   const { ticket } = await params;
+  const { autoprint } = await searchParams;
   const bale = await db.bale.findUnique({
     where: { ticketNumber: decodeURIComponent(ticket) },
     include: { grower: true, floor: true, season: true, contract: true },
@@ -19,7 +21,8 @@ export default async function TicketPage({ params }: PageProps<"/bales/[ticket]/
   return (
     <div className="space-y-4">
       <div className="flex gap-3 print:hidden">
-        <PrintButton />
+        <PrintLabelButton ticket={decodeURIComponent(ticket)} autoPrint={autoprint === "1"} />
+        <PrintButton label="Print on paper" primary={false} />
         <Link href="/reception" className="btn">
           <Scale size={16} aria-hidden />
           Next bale

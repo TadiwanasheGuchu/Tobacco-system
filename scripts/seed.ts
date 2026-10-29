@@ -6,6 +6,7 @@
  *   npm run db:seed
  */
 import "dotenv/config";
+import { randomBytes } from "node:crypto";
 import { db } from "../src/lib/db";
 import { hashPassword } from "../src/lib/auth/password";
 
@@ -97,6 +98,14 @@ async function main() {
   if ((await db.paymentSplitRule.count()) === 0) {
     await db.paymentSplitRule.create({ data: { usdPercent: "70", effectiveFrom: new Date(`${year}-01-01T00:00:00Z`) } });
   }
+
+  // A sample scale station for the auction floor's reception desk. Its secret
+  // is shown under Admin > Scales for setting up the reception agent.
+  await db.scaleStation.upsert({
+    where: { code: "HAF-R1" },
+    update: {},
+    create: { code: "HAF-R1", name: "Reception desk 1", floorId: auction.id, secret: randomBytes(32).toString("hex") },
+  });
 
   const passwordHash = await hashPassword(PASSWORD);
   const users = [

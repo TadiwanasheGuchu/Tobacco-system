@@ -47,3 +47,7 @@ next-env.d.ts
 
 # example env file is committed
 !.env.example
+
+# reception agent
+/agent/node_modules/
+/agent/labels.zpl

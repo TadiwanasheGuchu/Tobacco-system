@@ -2,9 +2,9 @@
 
 import { Printer } from "lucide-react";
 
-export function PrintButton({ label = "Print ticket" }: { label?: string }) {
+export function PrintButton({ label = "Print ticket", primary = true }: { label?: string; primary?: boolean }) {
   return (
-    <button className="btn btn-primary" onClick={() => window.print()}>
+    <button className={primary ? "btn btn-primary" : "btn"} onClick={() => window.print()}>
       <Printer size={16} aria-hidden />
       {label}
     </button>

@@ -1,0 +1,16 @@
+{
+  "name": "tobacco-floor-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reception PC agent: reads the scale, signs weights, prints bale tickets on Zebra printers.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/index.mjs",
+    "sim": "SCALE_PORT=sim node src/index.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "serialport": "^13.0.0"
+  }
+}

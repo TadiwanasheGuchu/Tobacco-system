@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { BaleStatus, GradingKind } from "@/generated/prisma/enums";
 import { audit, db, nextSequence, Tx } from "@/lib/db";
 import { dec, formatPricePerKg } from "@/lib/money";
+import { verifyReading } from "@/lib/scale-reading";
 import { formatTicketNumber } from "@/lib/ticket";
 import { enqueueTimb } from "@/lib/timb/outbox";
 import { activeSeason, Actor, DomainError, lockBale } from "./common";
@@ -14,21 +15,34 @@ const priceString = z
   .trim()
   .refine((v) => /^\d+(\.\d{1,4})?$/.test(v) && Number(v) > 0, "Enter a price per kg in USD, e.g. 3.85.");
 
+const massString = z
+  .string()
+  .trim()
+  .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), "Enter the mass in kg, e.g. 98.5.")
+  .refine(
+    (v) => Number(v) >= MIN_BALE_KG && Number(v) <= MAX_BALE_KG,
+    `Bale mass must be between ${MIN_BALE_KG} and ${MAX_BALE_KG} kg.`,
+  );
+
 export const receiveSchema = z.object({
   timbGrowerNumber: z.string().trim().toUpperCase().min(1, "Enter the grower number."),
   floorId: z.string().min(1, "Choose the floor."),
   contractId: z.string().optional(),
-  massKg: z
-    .string()
-    .trim()
-    .refine((v) => /^\d+(\.\d{1,2})?$/.test(v), "Enter the mass in kg, e.g. 98.5.")
-    .refine(
-      (v) => Number(v) >= MIN_BALE_KG && Number(v) <= MAX_BALE_KG,
-      `Bale mass must be between ${MIN_BALE_KG} and ${MAX_BALE_KG} kg.`,
-    ),
-  weighSource: z.enum(["SCALE", "MANUAL"]),
+  /** Typed mass, used only when there is no signed scale reading. */
+  massKg: z.string().trim().optional(),
+  /** Signed reading from the reception agent (JSON), when the bale was weighed on a scale. */
+  scaleReading: z.string().trim().optional(),
   lane: z.string().trim().optional(),
 });
+
+/**
+ * Whether typed weights are accepted. Set ALLOW_MANUAL_WEIGHTS=false once every
+ * reception desk has a working scale; supervisors can still type a weight
+ * (e.g. when a scale breaks), and those bales stay marked MANUAL.
+ */
+export function manualWeightAllowed(role: string) {
+  return process.env.ALLOW_MANUAL_WEIGHTS !== "false" || role === "SUPERVISOR" || role === "ADMIN";
+}
 
 export async function receiveBale(actor: Actor, input: z.input<typeof receiveSchema>) {
   const data = receiveSchema.parse(input);
@@ -53,6 +67,32 @@ export async function receiveBale(actor: Actor, input: z.input<typeof receiveSch
       contractId = contract.id;
     }
 
+    // Weight: a signed scale reading wins; otherwise a typed weight, if allowed.
+    let massKg: string;
+    let weighSource: "SCALE" | "MANUAL";
+    let scale: { stationId: string; readingId: string } | null = null;
+    if (data.scaleReading) {
+      const parsed = JSON.parse(data.scaleReading) as { station?: string };
+      const station = parsed?.station ? await tx.scaleStation.findUnique({ where: { code: parsed.station } }) : null;
+      if (!station?.active) throw new DomainError("This scale station isn't registered or has been switched off.");
+      if (station.floorId !== floor.id) throw new DomainError(`Scale ${station.code} belongs to a different floor.`);
+      const check = verifyReading(data.scaleReading, station.secret);
+      if (!check.ok) throw new DomainError(check.reason);
+      if (await tx.bale.findUnique({ where: { scaleReadingId: check.reading.nonce } })) {
+        throw new DomainError("That scale reading was already used for another bale. Weigh this bale again.");
+      }
+      massKg = massString.parse(check.reading.kg);
+      weighSource = "SCALE";
+      scale = { stationId: station.id, readingId: check.reading.nonce };
+      await tx.scaleStation.update({ where: { id: station.id }, data: { lastUsedAt: new Date() } });
+    } else {
+      if (!manualWeightAllowed(actor.role)) {
+        throw new DomainError("Weights must come from the scale. Ask a supervisor if the scale isn't working.");
+      }
+      massKg = massString.parse(data.massKg ?? "");
+      weighSource = "MANUAL";
+    }
+
     const seq = await nextSequence(tx, `ticket:${floor.code}:${season.year}`);
     const bale = await tx.bale.create({
       data: {
@@ -61,21 +101,21 @@ export async function receiveBale(actor: Actor, input: z.input<typeof receiveSch
         floorId: floor.id,
         seasonId: season.id,
         contractId,
-        massKg: dec(data.massKg).toFixed(2),
-        weighSource: data.weighSource,
+        massKg: dec(massKg).toFixed(2),
+        weighSource,
+        scaleStationId: scale?.stationId ?? null,
+        scaleReadingId: scale?.readingId ?? null,
         lane: data.lane || null,
         receivedById: actor.id,
       },
     });
-    await audit(tx, actor.id, "bale.receive", "Bale", bale.id, {
-      massKg: data.massKg,
-      weighSource: data.weighSource,
-    });
+    await audit(tx, actor.id, "bale.receive", "Bale", bale.id, { massKg, weighSource, scaleStationId: scale?.stationId });
     await enqueueTimb(tx, "BALE_RECEIVED", bale.id, {
       ticketNumber: bale.ticketNumber,
       timbGrowerNumber: grower.timbGrowerNumber,
       floorCode: floor.code,
-      massKg: data.massKg,
+      massKg,
+      weighSource,
       receivedAt: bale.receivedAt.toISOString(),
     });
     return bale;

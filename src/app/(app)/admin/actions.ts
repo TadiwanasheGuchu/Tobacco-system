@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { refresh } from "next/cache";
 import { ActionState, runAction, str } from "@/lib/action";
 import { requireAction } from "@/lib/auth/dal";
@@ -230,5 +231,48 @@ export async function retryOutboxAction(id: string, _: ActionState): Promise<Act
     });
     refresh();
     return "Queued for retry.";
+  });
+}
+
+export async function createScaleStationAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(async () => {
+    const admin = await requireAction("admin");
+    const code = str(formData, "code").trim().toUpperCase();
+    if (!/^[A-Z0-9-]{3,20}$/.test(code)) throw new DomainError("Station code: 3-20 letters, digits or dashes, e.g. HAF-R1.");
+    const floorId = str(formData, "floorId");
+    if (!(await db.floor.findUnique({ where: { id: floorId } }))) throw new DomainError("Choose the floor.");
+    if (await db.scaleStation.findUnique({ where: { code } })) throw new DomainError("That station code is taken.");
+    await db.$transaction(async (tx) => {
+      const st = await tx.scaleStation.create({
+        data: { code, name: str(formData, "name").trim() || code, floorId, secret: randomBytes(32).toString("hex") },
+      });
+      await audit(tx, admin.id, "scale.create", "ScaleStation", st.id, { code });
+    });
+    refresh();
+    return `Station ${code} added. Open its agent settings to set up the reception PC.`;
+  });
+}
+
+export async function rotateScaleSecretAction(stationId: string, _: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    const admin = await requireAction("admin");
+    await db.$transaction(async (tx) => {
+      await tx.scaleStation.update({ where: { id: stationId }, data: { secret: randomBytes(32).toString("hex") } });
+      await audit(tx, admin.id, "scale.rotateSecret", "ScaleStation", stationId);
+    });
+    refresh();
+    return "New secret issued. Update STATION_SECRET on that PC's agent.";
+  });
+}
+
+export async function setScaleActiveAction(stationId: string, active: boolean, _: ActionState): Promise<ActionState> {
+  return runAction(async () => {
+    const admin = await requireAction("admin");
+    await db.$transaction(async (tx) => {
+      await tx.scaleStation.update({ where: { id: stationId }, data: { active } });
+      await audit(tx, admin.id, active ? "scale.enable" : "scale.disable", "ScaleStation", stationId);
+    });
+    refresh();
+    return active ? "Station switched on." : "Station switched off. Its readings are refused.";
   });
 }
