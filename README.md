@@ -62,6 +62,19 @@ The **Floor (scan)** screen (`/floor`) is built for phones and rugged Android sc
 
 The camera needs HTTPS, so the floor server must have a certificate (localhost is exempt for testing). On iPhones the camera scanner isn't available yet, so typing or a Bluetooth scanner is used instead.
 
+## Payments
+
+Bank and mobile money payouts go through **payment batches** (**Payments** in the menu):
+
+1. **Cashier prepares** settlements as before, choosing bank transfer, mobile money or cash.
+2. **Supervisor creates a batch** for one method and one currency (bank USD, bank ZiG, mobile money USD, mobile money ZiG). Each batch gets a number like `PAY-26-00001`. Payee details are checked first: a settlement with a missing or invalid account, or a mobile number that isn't a Zimbabwe 07x number, is left out and named.
+3. **Download the payout file** (CSV) and upload it to the bank or mobile money portal. Every download is logged.
+4. **Confirm** with the provider's reference once they pay, or **cancel** with a reason if they reject it, which puts the settlements back in the queue.
+
+A settlement is marked **paid** once each part it needs (USD and/or ZiG) is in a confirmed batch. The person confirming must not have prepared any settlement in the batch. A settlement in a batch can't be reversed or paid by hand. If charges and loan recovery took the whole sale, the settlement closes on its own as "No payout: fully deducted". Cash settlements are still released one by one against a cash voucher number.
+
+> The file layouts are generic. Each bank and mobile money provider has its own upload template, so map the columns (in `src/app/(app)/payments/[id]/file/route.ts`) once you have their spec.
+
 ## Reports
 
 **Reports** is open to supervisors, cashiers and admins. Choose a date range and a floor to see:
@@ -71,7 +84,7 @@ The camera needs HTTPS, so the floor server must have a certificate (localhost i
 - payouts: gross, each deduction, net, the USD and ZiG amounts, paid versus waiting for release, and the split by payment method
 - input loan recovery per contractor for the open season
 
-Each table downloads as a CSV file that opens in Excel. The **payment list** CSV shows each grower's bank or mobile money details next to the amounts. It is the starting point for bank batch files, which come once we know each bank's file format.
+Each table downloads as a CSV file that opens in Excel. The **payment list** CSV shows each grower's bank or mobile money details next to the amounts. The payout files themselves come from **Payments**.
 
 A bale counts as sold on the day the grower accepts its price. Bale values are rounded to cents per bale, the same way statements do it, so reports match the statements.
 
@@ -146,4 +159,4 @@ Every server action re-checks the session and permission itself (`requireAction`
 1. **Scale and printer agent.** A small service on each reception PC that reads the scale over its serial port and prints tickets on Zebra label printers.
 2. **Floor server and HQ sync.** Each floor runs on its own server and keeps trading through internet outages, then syncs to head office.
 3. **Live TIMB adapter**, once TIMB provides the spec and credentials.
-4. **Payment files:** bank batch files and mobile money disbursement, with reconciliation.
+4. **Provider file formats:** each bank's and mobile money provider's exact upload template, plus automatic reconciliation of their statements.

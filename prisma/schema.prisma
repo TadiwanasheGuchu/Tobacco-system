@@ -79,6 +79,17 @@ enum PaymentMethod {
   CASH
 }
 
+enum Currency {
+  USD
+  ZIG
+}
+
+enum PaymentBatchStatus {
+  OPEN // file produced, waiting for the bank / mobile money provider to confirm
+  CONFIRMED // provider confirmed the payout; settlements marked paid
+  CANCELLED // not sent, or rejected by the provider; settlements can be batched again
+}
+
 enum OutboxStatus {
   PENDING
   SENT
@@ -323,8 +334,47 @@ model Settlement {
   reversalReason   String?
   lines            SettlementLine[]
   deductions       SettlementDeduction[]
+  batchLines       PaymentBatchLine[]
 
   @@index([growerId])
+}
+
+/// One payout file for a bank or mobile money provider, in one currency.
+model PaymentBatch {
+  id            String             @id @default(cuid())
+  number        String             @unique
+  method        PaymentMethod
+  currency      Currency
+  status        PaymentBatchStatus @default(OPEN)
+  totalAmount   Decimal            @db.Decimal(16, 2)
+  lineCount     Int
+  createdById   String
+  createdAt     DateTime           @default(now())
+  confirmedById String?
+  confirmedAt   DateTime?
+  bankReference String?
+  cancelledById String?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  lines         PaymentBatchLine[]
+}
+
+/// Payee details are copied in when the batch is made, so the file can be
+/// reproduced exactly even if the grower's details change later.
+model PaymentBatchLine {
+  id           String       @id @default(cuid())
+  batchId      String
+  batch        PaymentBatch @relation(fields: [batchId], references: [id])
+  settlementId String
+  settlement   Settlement   @relation(fields: [settlementId], references: [id])
+  amount       Decimal      @db.Decimal(16, 2)
+  payeeName    String
+  payeeAccount String
+  payeeBank    String?
+  reference    String
+
+  @@index([settlementId])
+  @@index([batchId])
 }
 
 model SettlementLine {

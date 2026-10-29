@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
   BarChart3,
+  Landmark,
   LayoutDashboard,
   Package,
   Scale,
@@ -22,6 +23,7 @@ const ICONS: Record<string, LucideIcon> = {
   bales: Package,
   growers: Users,
   settlements: Wallet,
+  payments: Landmark,
   reports: BarChart3,
   rates: ArrowLeftRight,
   admin: Settings,

@@ -3,6 +3,7 @@ import { audit, db, nextSequence, Tx } from "@/lib/db";
 import { dec, Decimal } from "@/lib/money";
 import { calculateSettlement, CalcResult, SettlementCalcError } from "@/lib/settlement-calc";
 import { activeSeason, Actor, DomainError, startOfToday } from "./common";
+import { isInLiveBatch } from "./payments";
 
 const LOAN_RECOVERY_MAX_PERCENT = process.env.LOAN_RECOVERY_MAX_PERCENT ?? "100";
 
@@ -135,6 +136,10 @@ export async function createSettlement(actor: Actor, growerId: string, group: Se
         payZig: calc.payZig.toFixed(2),
         paymentMethod,
         createdById: actor.id,
+        // Everything went to charges and loan recovery: no money moves, so close it now.
+        ...(calc.netUsd.isZero()
+          ? { status: "PAID" as const, paidAt: new Date(), paymentReference: "No payout: fully deducted" }
+          : {}),
         lines: {
           create: calc.lines.map((l) => {
             const bale = bales.find((b) => b.id === l.baleId)!;
@@ -176,6 +181,9 @@ export async function markSettlementPaid(actor: Actor, settlementId: string, pay
     if (s.createdById === actor.id) {
       throw new DomainError("Payment must be released by someone other than the person who prepared the settlement.");
     }
+    if (await isInLiveBatch(settlementId, tx)) {
+      throw new DomainError("This settlement is in a payment batch. Confirm or cancel the batch under Payments instead.");
+    }
     const updated = await tx.settlement.updateMany({
       where: { id: settlementId, status: "APPROVED" },
       data: { status: "PAID", paidById: actor.id, paidAt: new Date(), paymentReference: paymentReference.trim() },
@@ -192,6 +200,9 @@ export async function reverseSettlement(actor: Actor, settlementId: string, reas
     const s = await tx.settlement.findUnique({ where: { id: settlementId }, include: { lines: true } });
     if (!s) throw new DomainError("Settlement not found.");
     if (s.status !== "APPROVED") throw new DomainError("Only unpaid settlements can be reversed.");
+    if (await isInLiveBatch(settlementId, tx)) {
+      throw new DomainError("This settlement is in a payment batch. Cancel the batch first, then reverse.");
+    }
     await tx.settlement.update({
       where: { id: settlementId },
       data: { status: "REVERSED", reversedById: actor.id, reversedAt: new Date(), reversalReason: reason.trim() },

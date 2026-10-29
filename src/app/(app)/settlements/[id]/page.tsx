@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BadgeCheck, Undo2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import { ActionForm, Field } from "@/components/action-form";
@@ -118,7 +119,15 @@ export default async function SettlementPage({ params }: PageProps<"/settlements
         </footer>
       </article>
 
-      {s.status === "APPROVED" && can(user.role, "settlement.pay") && (
+      {s.status === "APPROVED" && s.paymentMethod !== "CASH" && (
+        <p className="card text-sm print:hidden">
+          {s.paymentMethod === "MOBILE_MONEY" ? "Mobile money" : "Bank"} payouts are released in a payment batch.{" "}
+          <Link href="/payments" className="underline">
+            Go to Payments
+          </Link>
+        </p>
+      )}
+      {s.status === "APPROVED" && s.paymentMethod === "CASH" && can(user.role, "settlement.pay") && (
         <section className="card print:hidden">
           <h2 className="mb-2 font-semibold">Release payment</h2>
           <ActionForm
@@ -127,7 +136,7 @@ export default async function SettlementPage({ params }: PageProps<"/settlements
             className="flex flex-wrap items-end gap-3"
             confirm="Confirm the payment has been made?"
           >
-            <Field label="Payment reference" name="reference" required hint="Bank, mobile money or cash voucher reference." />
+            <Field label="Cash voucher number" name="reference" required hint="Number of the signed cash payout voucher." />
           </ActionForm>
         </section>
       )}
